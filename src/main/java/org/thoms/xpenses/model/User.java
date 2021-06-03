@@ -8,7 +8,11 @@ import software.amazon.awssdk.utils.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static org.thoms.xpenses.configuration.UserConfiguration.ACTIVITIES;
+import static org.thoms.xpenses.configuration.UserConfiguration.USERNAME;
+import static org.thoms.xpenses.utils.DynamoDBUtils.getListAttribute;
+import static org.thoms.xpenses.utils.DynamoDBUtils.getStringAttribute;
 
 @Builder
 @Getter
@@ -19,21 +23,11 @@ public class User {
     private final String username;
 
     public static User from(final Map<String, AttributeValue> response) {
-
-        final var username = "username";
-
-        final var activities = "activities";
-
         return CollectionUtils.isNullOrEmpty(response) ? null :
                 Optional.of(response)
                         .map(r -> new UserBuilder()
-                                .username(Optional.ofNullable(r.get(username).s())
-                                        .orElse(null))
-                                .activities(Optional.ofNullable(r.get(activities).l())
-                                        .orElse(List.of())
-                                        .stream()
-                                        .map(AttributeValue::s)
-                                        .collect(Collectors.toList()))
+                                .username(getStringAttribute(response.get(USERNAME)))
+                                .activities(getListAttribute(response.get(ACTIVITIES)))
                                 .build()
                         )
                         .orElse(null);

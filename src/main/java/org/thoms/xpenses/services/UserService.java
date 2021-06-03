@@ -31,14 +31,13 @@ public class UserService {
         final var request = GetItemRequest
                 .builder()
                 .tableName(USERS_TABLE)
-                .key(Map.of(USERS_TABLE_KEY, AttributeValue.builder().s(username).build()))
+                .key(Map.of(USERNAME, AttributeValue.builder().s(username).build()))
                 .build();
 
         return User.from(dynamoDB.getItem(request).item());
     }
 
-    // TODO add to create activity endpoint
-    public void addActivity(final String username, final String activityId) {
+    void addActivity(final String username, final String activityId) {
         validateParams(username, activityId);
 
         if (getUser(username).getActivities().contains(activityId))
@@ -63,11 +62,11 @@ public class UserService {
     }
 
     private void addActivityToUser(final String username, final String activityId) {
-        UpdateItemRequest
+        final var request = UpdateItemRequest
                 .builder()
                 .tableName(USERS_TABLE)
-                .key(Map.of(USERS_TABLE_KEY, AttributeValue.builder().s(username).build()))
-                .attributeUpdates(Map.of(USERS_TABLE_ACTIVITIES,
+                .key(Map.of(USERNAME, AttributeValue.builder().s(username).build()))
+                .attributeUpdates(Map.of(ACTIVITIES,
                         AttributeValueUpdate
                                 .builder()
                                 .action(AttributeAction.ADD)
@@ -75,11 +74,12 @@ public class UserService {
                                 .build()))
                 .build();
 
+        dynamoDB.updateItem(request);
+
         log.infof("Successfully added activity '{}' to user '{}'", activityId, username);
     }
 
-    // TODO add to activity : delete endpoint
-    public void deleteActivity(final String activityId) {
+    void deleteActivity(final String activityId) {
         if (StringUtils.isBlank(activityId)) {
             throw new BadRequestException("Activity id must not be blank");
         }
@@ -91,17 +91,19 @@ public class UserService {
     }
 
     private void deleteActivityToUser(final String username, final String activityId) {
-        UpdateItemRequest
+        final var request = UpdateItemRequest
                 .builder()
                 .tableName(USERS_TABLE)
-                .key(Map.of(USERS_TABLE_KEY, AttributeValue.builder().s(username).build()))
-                .attributeUpdates(Map.of(USERS_TABLE_ACTIVITIES,
+                .key(Map.of(USERNAME, AttributeValue.builder().s(username).build()))
+                .attributeUpdates(Map.of(ACTIVITIES,
                         AttributeValueUpdate
                                 .builder()
                                 .action(AttributeAction.DELETE)
                                 .value(AttributeValue.builder().s(activityId).build())
                                 .build()))
                 .build();
+
+        dynamoDB.updateItem(request);
 
         log.infof("Successfully deleted activity '{}' to user '{}'", activityId, username);
     }
