@@ -3,7 +3,11 @@ package org.thoms.xpenses.services;
 import lombok.extern.jbosslog.JBossLog;
 import org.thoms.xpenses.model.User;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.utils.StringUtils;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -13,7 +17,9 @@ import javax.ws.rs.NotFoundException;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.thoms.xpenses.configuration.UserConfiguration.*;
+import static org.thoms.xpenses.configuration.UserConfiguration.ACTIVITIES;
+import static org.thoms.xpenses.configuration.UserConfiguration.USERNAME;
+import static org.thoms.xpenses.configuration.UserConfiguration.USERS_TABLE;
 import static org.thoms.xpenses.configuration.UserConstants.USERS;
 
 @JBossLog
@@ -41,7 +47,7 @@ public class UserService {
         validateParams(username, activityId);
 
         if (getUser(username).getActivities().contains(activityId))
-            log.warnf("Activity '{}' already exists for user '{}'", activityId, username);
+            log.warnf("Activity '%s' already exists for user '%s'", activityId, username);
 
         else addActivityToUser(username, activityId);
     }
@@ -69,14 +75,14 @@ public class UserService {
                 .attributeUpdates(Map.of(ACTIVITIES,
                         AttributeValueUpdate
                                 .builder()
-                                .action(AttributeAction.ADD)
+                                .action(AttributeAction.PUT)
                                 .value(AttributeValue.builder().s(activityId).build())
                                 .build()))
                 .build();
 
         dynamoDB.updateItem(request);
 
-        log.infof("Successfully added activity '{}' to user '{}'", activityId, username);
+        log.infof("Successfully added activity '%s' to user '%s'", activityId, username);
     }
 
     void deleteActivity(final String activityId) {
@@ -86,7 +92,7 @@ public class UserService {
 
         USERS.forEach(u -> {
             if (getUser(u).getActivities().contains(activityId)) deleteActivityToUser(u, activityId);
-            else log.errorf("Activity '{}' not found for user '{}'", activityId, u);
+            else log.errorf("Activity '%s' not found for user '%s'", activityId, u);
         });
     }
 
@@ -105,7 +111,7 @@ public class UserService {
 
         dynamoDB.updateItem(request);
 
-        log.infof("Successfully deleted activity '{}' to user '{}'", activityId, username);
+        log.infof("Successfully deleted activity '%s' to user '%s'", activityId, username);
     }
 
 }

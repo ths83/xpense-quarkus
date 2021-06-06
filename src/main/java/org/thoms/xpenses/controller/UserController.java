@@ -1,4 +1,4 @@
-package org.thoms.xpenses.resources;
+package org.thoms.xpenses.controller;
 
 import org.thoms.xpenses.services.UserService;
 
@@ -11,7 +11,7 @@ import java.util.Optional;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Path("/users")
-public class UserResource {
+public class UserController {
 
     @Inject
     UserService service;

@@ -1,7 +1,7 @@
-package org.thoms.xpenses.resources;
+package org.thoms.xpenses.controller;
 
-import org.thoms.xpenses.model.request.CreateRequestBody;
-import org.thoms.xpenses.model.request.UpdateRequestBody;
+import org.thoms.xpenses.model.request.activities.CreateActivityRequest;
+import org.thoms.xpenses.model.request.activities.UpdateActivityRequest;
 import org.thoms.xpenses.services.ActivityService;
 
 import javax.inject.Inject;
@@ -13,13 +13,13 @@ import java.util.Optional;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Path("/activities")
-public class ActivityResource {
+public class ActivityController {
 
     @Inject
     ActivityService service;
 
     @POST
-    public Response create(final CreateRequestBody request) {
+    public Response create(final CreateActivityRequest request) {
         return Response.ok(service.create(request.getName(), request.getCreatedBy())).build();
     }
 
@@ -40,19 +40,22 @@ public class ActivityResource {
 
     @PUT
     @Path("{activityId}")
-    public void update(@PathParam("activityId") final String activityId, final UpdateRequestBody request) {
+    public Response update(@PathParam("activityId") final String activityId, final UpdateActivityRequest request) {
         service.update(activityId, request.getName(), request.getDate());
+        return Response.noContent().build();
     }
 
     @DELETE
     @Path("{activityId}")
-    public void delete(@PathParam("activityId") final String activityId) {
+    public Response delete(@PathParam("activityId") final String activityId) {
         service.delete(activityId);
+        return Response.noContent().build();
     }
 
     @PATCH
     @Path("{activityId}")
-    public void close(@PathParam("activityId") final String activityId) {
+    public Response close(@PathParam("activityId") final String activityId) {
         service.close(activityId);
+        return Response.noContent().build();
     }
 }

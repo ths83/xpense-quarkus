@@ -25,7 +25,7 @@ public class User {
     public static User from(final Map<String, AttributeValue> response) {
         return CollectionUtils.isNullOrEmpty(response) ? null :
                 Optional.of(response)
-                        .map(r -> new UserBuilder()
+                        .map(r -> User.builder()
                                 .username(getStringAttribute(response.get(USERNAME)))
                                 .activities(getListAttribute(response.get(ACTIVITIES)))
                                 .build()

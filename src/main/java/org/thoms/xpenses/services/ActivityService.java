@@ -4,22 +4,41 @@ import lombok.extern.jbosslog.JBossLog;
 import org.thoms.xpenses.model.ActionEnum;
 import org.thoms.xpenses.model.Activity;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.utils.StringUtils;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.thoms.xpenses.configuration.ActivityConfiguration.*;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.ACTIVITIES_TABLE;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.ACTIVITY_NAME;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.ACTIVITY_STATUS;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.CREATED_BY;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.EXPENSES;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.ID;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.START_DATE;
+import static org.thoms.xpenses.configuration.ActivityConfiguration.USERS_ATTRIBUTE;
 import static org.thoms.xpenses.configuration.UserConstants.USER_1;
 import static org.thoms.xpenses.configuration.UserConstants.USER_2;
-import static org.thoms.xpenses.utils.DynamoDBUtils.*;
+import static org.thoms.xpenses.utils.DynamoDBUtils.buildAttributeList;
+import static org.thoms.xpenses.utils.DynamoDBUtils.buildAttributes;
+import static org.thoms.xpenses.utils.DynamoDBUtils.buildStringAttribute;
+import static org.thoms.xpenses.utils.DynamoDBUtils.buildStringAttributeUpdate;
 
 @JBossLog
 @ApplicationScoped
@@ -30,6 +49,9 @@ public class ActivityService {
 
     @Inject
     UserService userService;
+
+    @Inject
+    ExpenseService expenseService;
 
     public Activity create(final String name, final String createdBy) {
         if (StringUtils.isBlank(name)) {
@@ -89,16 +111,6 @@ public class ActivityService {
                 .collect(Collectors.toList());
     }
 
-    private KeysAndAttributes buildAttributes(final List<String> activities) {
-        return KeysAndAttributes.builder()
-                .keys(activities
-                        .stream()
-                        .map(a -> Map.of(ID, buildStringAttribute(a)))
-                        .collect(Collectors.toList()))
-                .build();
-    }
-
-    // TODO add to create expense endpoint
     void addExpense(final String activityId, final String expenseId) {
         final var request = UpdateItemRequest
                 .builder()
@@ -107,7 +119,7 @@ public class ActivityService {
                 .attributeUpdates(Map.of(EXPENSES,
                         AttributeValueUpdate
                                 .builder()
-                                .action(AttributeAction.ADD)
+                                .action(AttributeAction.PUT)
                                 .value(AttributeValue.builder().s(expenseId).build())
                                 .build()))
                 .build();
@@ -116,7 +128,7 @@ public class ActivityService {
 
         addUsersToActivity(activityId);
 
-        log.infof("Successfully added expense '{}' to activity '{}'", expenseId, activityId);
+        log.infof("Successfully added expense '%s' to activity '%s'", expenseId, activityId);
     }
 
     private void addUsersToActivity(final String activityId) {
@@ -148,15 +160,16 @@ public class ActivityService {
 
         dynamoDB.updateItem(request);
 
-        log.infof("Successfully updated activity '{}'", activityId);
+        log.infof("Successfully updated activity '%s'", activityId);
     }
 
     public void delete(final String activityId) {
-        validateActivityId(activityId);
+        Optional.ofNullable(get(activityId))
+                .orElseThrow(() -> new NotFoundException(String.format("Activity '%s' not found", activityId)))
+                .getExpenses()
+                .forEach(exp -> expenseService.delete(activityId, exp));
 
         userService.deleteActivity(activityId);
-
-        // TODO add delete expense for each expense
 
         final var request = DeleteItemRequest
                 .builder()
@@ -166,7 +179,7 @@ public class ActivityService {
 
         dynamoDB.deleteItem(request);
 
-        log.infof("Successfully deleted activity '{}'", activityId);
+        log.infof("Successfully deleted activity '%s'", activityId);
     }
 
     public void close(final String activityId) {
@@ -182,7 +195,7 @@ public class ActivityService {
 
         dynamoDB.updateItem(request);
 
-        log.infof("Successfully close activity '{}'", activityId);
+        log.infof("Successfully close activity '%s'", activityId);
     }
 
     private void validateActivityId(String activityId) {
@@ -191,5 +204,25 @@ public class ActivityService {
         }
 
         get(activityId);
+    }
+
+    void deleteExpense(final String activityId, final String expenseId) {
+        validateActivityId(activityId);
+
+        final var request = UpdateItemRequest
+                .builder()
+                .tableName(ACTIVITIES_TABLE)
+                .key(Map.of(ID, AttributeValue.builder().s(activityId).build()))
+                .attributeUpdates(Map.of(EXPENSES,
+                        AttributeValueUpdate
+                                .builder()
+                                .action(AttributeAction.DELETE)
+                                .value(AttributeValue.builder().s(expenseId).build())
+                                .build()))
+                .build();
+
+        dynamoDB.updateItem(request);
+
+        log.infof("Successfully deleted expense '%s' from activity '%s'", expenseId, activityId);
     }
 }

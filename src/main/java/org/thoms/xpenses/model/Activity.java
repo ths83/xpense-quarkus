@@ -27,7 +27,7 @@ public class Activity {
     public static Activity from(final Map<String, AttributeValue> response) {
         return CollectionUtils.isNullOrEmpty(response) ? null :
                 Optional.of(response)
-                        .map(r -> new ActivityBuilder()
+                        .map(r -> Activity.builder()
                                 .id(getStringAttribute(r.get(ID)))
                                 .activityName(getStringAttribute(r.get(ACTIVITY_NAME)))
                                 .createdBy(getStringAttribute(r.get(CREATED_BY)))
