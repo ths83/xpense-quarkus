@@ -11,11 +11,13 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.awssdk.utils.StringUtils;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -42,101 +44,106 @@ import static org.thoms.xpenses.utils.DynamoDBUtils.buildStringAttributeUpdate;
 @ApplicationScoped
 public class ExpenseService {
 
-    @Inject
-    DynamoDbClient dynamoDB;
+	@Inject
+	DynamoDbClient dynamoDB;
 
-    @Inject
-    ActivityService activityService;
+	@Inject
+	ActivityService activityService;
 
-    public Expense create(final Expense request) {
-        final var id = UUID.randomUUID().toString();
+	public Expense create(final Expense request) {
+		final var id = UUID.randomUUID().toString();
 
-        final var expense = Map.of(
-                ID, buildStringAttribute(id),
-                EXPENSE_NAME, buildStringAttribute(request.getExpenseName()),
-                USER, buildStringAttribute(request.getUser()),
-                AMOUNT, buildNumberAttribute(request.getAmount()),
-                CURRENCY, buildStringAttribute(CAD),
-                START_DATE, buildStringAttribute(LocalDateTime.now().toString()),
-                ACTIVITY_ID, buildStringAttribute(request.getActivityId())
-        );
+		final var expense = Map.of(
+				ID, buildStringAttribute(id),
+				EXPENSE_NAME, buildStringAttribute(request.getExpenseName()),
+				USER, buildStringAttribute(request.getUser()),
+				AMOUNT, buildNumberAttribute(request.getAmount()),
+				CURRENCY, buildStringAttribute(CAD),
+				START_DATE, buildStringAttribute(LocalDateTime.now().toString()),
+				ACTIVITY_ID, buildStringAttribute(request.getActivityId())
+		);
 
-        dynamoDB.putItem(
-                PutItemRequest
-                        .builder()
-                        .tableName(EXPENSES_TABLE)
-                        .item(expense)
-                        .build());
+		dynamoDB.putItem(
+				PutItemRequest
+						.builder()
+						.tableName(EXPENSES_TABLE)
+						.item(expense)
+						.build());
 
-        activityService.addExpense(request.getActivityId(), id);
+		activityService.addExpense(request.getActivityId(), id);
 
-        log.infof("Successfully added expense '%s' to activity '%s'", id, request.getActivityId());
+		log.infof("Successfully added expense '%s' to activity '%s'", id, request.getActivityId());
 
-        return Expense.from(expense);
-    }
+		return Expense.from(expense);
+	}
 
-    public Expense get(final String id) {
-        if (StringUtils.isBlank(id)) {
-            throw new BadRequestException("Expense id must not be blank");
-        }
+	public Expense get(final String id) {
+		if (StringUtils.isBlank(id)) {
+			throw new BadRequestException("Expense id must not be blank");
+		}
 
-        final var request = GetItemRequest
-                .builder()
-                .tableName(EXPENSES_TABLE)
-                .key(Map.of(ID, buildStringAttribute(id)))
-                .build();
+		final var request = GetItemRequest
+				.builder()
+				.tableName(EXPENSES_TABLE)
+				.key(Map.of(ID, buildStringAttribute(id)))
+				.build();
 
-        return Expense.from(dynamoDB.getItem(request).item());
-    }
+		final var response = dynamoDB.getItem(request).item();
 
-    public List<Expense> getByActivity(final String activityId) {
-        final var activity = activityService.get(activityId);
+		if (CollectionUtils.isNullOrEmpty(response))
+			throw new NotFoundException(String.format("Expense '%s' not found", id));
 
-        final var request = BatchGetItemRequest
-                .builder()
-                .requestItems(Map.of(ACTIVITIES_TABLE, buildAttributes(activity.getExpenses())))
-                .build();
+		return Expense.from(response);
+	}
 
-        final var responses = dynamoDB.batchGetItem(request).responses();
+	public List<Expense> getByActivity(final String activityId) {
+		final var activity = activityService.get(activityId);
 
-        return responses.get(EXPENSES_TABLE)
-                .stream()
-                .map(Expense::from)
-                .collect(Collectors.toList());
-    }
+		final var request = BatchGetItemRequest
+				.builder()
+				.requestItems(Map.of(ACTIVITIES_TABLE, buildAttributes(activity.getExpenses())))
+				.build();
 
-    public void update(final String id, final UpdateExpenseRequest request) {
-        get(id);
+		final var responses = dynamoDB.batchGetItem(request).responses();
 
-        final var itemRequest = UpdateItemRequest
-                .builder()
-                .tableName(EXPENSES_TABLE)
-                .key(Map.of(ID, AttributeValue.builder().s(id).build()))
-                .attributeUpdates(Map.of(
-                        EXPENSE_NAME, buildStringAttributeUpdate(request.getExpenseName()),
-                        START_DATE, buildStringAttributeUpdate(request.getStartDate()),
-                        CURRENCY, buildStringAttributeUpdate(request.getCurrency()),
-                        AMOUNT, buildNumberAttributeUpdate(request.getAmount())))
-                .build();
+		return responses.get(EXPENSES_TABLE)
+				.stream()
+				.map(Expense::from)
+				.collect(Collectors.toList());
+	}
 
-        dynamoDB.updateItem(itemRequest);
+	public void update(final String id, final UpdateExpenseRequest request) {
+		get(id);
 
-        log.infof("Successfully updated expense '%s'", id);
-    }
+		final var itemRequest = UpdateItemRequest
+				.builder()
+				.tableName(EXPENSES_TABLE)
+				.key(Map.of(ID, AttributeValue.builder().s(id).build()))
+				.attributeUpdates(Map.of(
+						EXPENSE_NAME, buildStringAttributeUpdate(request.getExpenseName()),
+						START_DATE, buildStringAttributeUpdate(request.getStartDate()),
+						CURRENCY, buildStringAttributeUpdate(request.getCurrency()),
+						AMOUNT, buildNumberAttributeUpdate(request.getAmount())))
+				.build();
 
-    public void delete(final String activityId, final String id) {
-        get(id);
+		dynamoDB.updateItem(itemRequest);
 
-        activityService.deleteExpense(activityId, id);
+		log.infof("Successfully updated expense '%s'", id);
+	}
 
-        final var request = DeleteItemRequest
-                .builder()
-                .tableName(EXPENSES_TABLE)
-                .key(Map.of(ActivityConfiguration.ID, AttributeValue.builder().s(activityId).build()))
-                .build();
+	public void delete(final String activityId, final String id) {
+		get(id);
 
-        dynamoDB.deleteItem(request);
+		activityService.deleteExpense(activityId, id);
 
-        log.infof("Successfully deleted expense '%s' from activity '%s'", id, activityId);
-    }
+		final var request = DeleteItemRequest
+				.builder()
+				.tableName(EXPENSES_TABLE)
+				.key(Map.of(ActivityConfiguration.ID, AttributeValue.builder().s(activityId).build()))
+				.build();
+
+		dynamoDB.deleteItem(request);
+
+		log.infof("Successfully deleted expense '%s' from activity '%s'", id, activityId);
+	}
 }
