@@ -1,7 +1,6 @@
 package org.thoms.xpenses.model;
 
-import lombok.Builder;
-import lombok.Getter;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.utils.CollectionUtils;
 
@@ -14,23 +13,47 @@ import static org.thoms.xpenses.configuration.UserConfiguration.USERNAME;
 import static org.thoms.xpenses.utils.DynamoDBUtils.getListAttribute;
 import static org.thoms.xpenses.utils.DynamoDBUtils.getStringAttribute;
 
-@Builder
-@Getter
+@RegisterForReflection
 public class User {
 
-    private final List<String> activities;
+	private List<String> activities;
 
-    private final String username;
+	private String username;
 
-    public static User from(final Map<String, AttributeValue> response) {
-        return CollectionUtils.isNullOrEmpty(response) ? null :
-                Optional.of(response)
-                        .map(r -> User.builder()
-                                .username(getStringAttribute(response.get(USERNAME)))
-                                .activities(getListAttribute(response.get(ACTIVITIES)))
-                                .build()
-                        )
-                        .orElse(null);
-    }
+	public User() {
+		super();
+	}
 
+	public User(List<String> activities, String username) {
+		this.activities = activities;
+		this.username = username;
+	}
+
+	public static User from(final Map<String, AttributeValue> response) {
+		return CollectionUtils.isNullOrEmpty(response) ? null :
+				Optional.of(response)
+						.map(r -> new User(
+								getListAttribute(response.get(ACTIVITIES)),
+								getStringAttribute(response.get(USERNAME)))
+						)
+						.orElse(null);
+	}
+
+	public List<String> getActivities() {
+		return activities;
+	}
+
+	public User setActivities(List<String> activities) {
+		this.activities = activities;
+		return this;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public User setUsername(String username) {
+		this.username = username;
+		return this;
+	}
 }

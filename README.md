@@ -1,65 +1,50 @@
-# xpenses-quarkus project
+# XPENSES
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+## Why ?
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+This application allows several users to track and share their expenses.
 
-## Running the application in dev mode
+Please notice the first version can manage up to 2 users, as the next versions will be available to more users.
 
-You can run your application in dev mode that enables live coding using:
+_Some configuration files are deliberately missing._
 
-```shell script
-./mvnw compile quarkus:dev
-```
-
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
-```
-
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory. Be aware that it’s not an _über-jar_ as
-the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
-```
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-## Creating a native executable
+### Creating a native executable
 
 You can create a native executable using:
 
 ```shell script
-./mvnw package -Pnative
+mvnci -Pnative
 ```
 
 Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
 
+_Note : quarkus.native.native-image-xmx args must be set for macos and Windows in order to allocate enough memory when
+building the image._
+
 ```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
+mvnci -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.native-image-xmx=4g
 ```
 
-You can then execute your native executable with: `./target/xpenses-quarkus-1.0-SNAPSHOT-runner`
+### Running the image
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html
-.
+```shell script
+docker run -i --rm -p 8080:8080 quarkus/xpenses-quarkus  
+```
 
-## Related guides
+#### Native executable code
 
-- RESTEasy JAX-RS ([guide](https://quarkus.io/guides/rest-json)): REST endpoint framework implementing JAX-RS and more
+https://quarkus.io/guides/writing-native-applications-tips
 
-## Provided examples
+The following dependency must be added for serialization
 
-### RESTEasy JAX-RS example
+```xml
 
-REST is easy peasy with this Hello World RESTEasy resource.
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jsonb</artifactId>
+</dependency>
+```
 
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)
+- Entities must be annotated by ```@RegisterForReflection``` to be included in the native executable.
+- Entities must contain at least a default constructor and a constructor with all parameters.
+- Entities constructors cannot be generated from Lombok annotations.

@@ -93,6 +93,8 @@ public class ExpenseService {
 		if (CollectionUtils.isNullOrEmpty(response))
 			throw new NotFoundException(String.format("Expense '%s' not found", id));
 
+		log.infof("Successfully found expense '%s'", id);
+
 		return Expense.from(response);
 	}
 
@@ -106,10 +108,14 @@ public class ExpenseService {
 
 		final var responses = dynamoDB.batchGetItem(request).responses();
 
-		return responses.get(EXPENSES_TABLE)
+		final var response = responses.get(EXPENSES_TABLE)
 				.stream()
 				.map(Expense::from)
 				.collect(Collectors.toList());
+
+		log.infof("Successfully found '%s' expense(s)", response.size());
+
+		return response;
 	}
 
 	public void update(final String id, final UpdateExpenseRequest request) {

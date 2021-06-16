@@ -61,8 +61,10 @@ public class ActivityService {
 			throw new BadRequestException("Created by must not be blank");
 		}
 
+		final var id = UUID.randomUUID().toString();
+
 		final var activity = Map.of(
-				ID, buildStringAttribute(UUID.randomUUID().toString()),
+				ID, buildStringAttribute(id),
 				ACTIVITY_NAME, buildStringAttribute(name),
 				CREATED_BY, buildStringAttribute(createdBy),
 				EXPENSES, buildAttributeList(List.of()),
@@ -77,6 +79,8 @@ public class ActivityService {
 						.tableName(ACTIVITIES_TABLE)
 						.item(activity)
 						.build());
+
+		log.infof("Successfully created activity '%s'", id);
 
 		return Activity.from(activity);
 	}
@@ -97,6 +101,8 @@ public class ActivityService {
 		if (CollectionUtils.isNullOrEmpty(response))
 			throw new NotFoundException(String.format("Activity %s not found", activityId));
 
+		log.infof("Successfully found activity '%s'", activityId);
+
 		return Activity.from(response);
 	}
 
@@ -110,10 +116,14 @@ public class ActivityService {
 
 		final var responses = dynamoDB.batchGetItem(request).responses();
 
-		return responses.get(ACTIVITIES_TABLE)
+		final var response = responses.get(ACTIVITIES_TABLE)
 				.stream()
 				.map(Activity::from)
 				.collect(Collectors.toList());
+
+		log.infof("Successfully found '%s' activity(ies)", response.size());
+
+		return response;
 	}
 
 	void addExpense(final String activityId, final String expenseId) {

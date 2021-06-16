@@ -46,6 +46,8 @@ public class UserService {
 		if (CollectionUtils.isNullOrEmpty(response))
 			throw new NotFoundException(String.format("Username '%s' not found", username));
 
+		log.infof("Successfully found user '%s'", username);
+
 		return User.from(response);
 	}
 
