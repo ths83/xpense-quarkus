@@ -1,5 +1,7 @@
 package org.thoms.xpenses.controller;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.thoms.xpenses.model.Expense;
 import org.thoms.xpenses.model.request.expenses.UpdateExpenseRequest;
 import org.thoms.xpenses.services.ExpenseService;
@@ -26,8 +28,13 @@ public class ExpenseController {
 	@Inject
 	ExpenseService service;
 
+	@Inject
+	@Channel("expenses-in")
+	Emitter<String> emitter;
+
 	@POST
 	public Response create(final Expense request) {
+		emitter.send("Created expense " + request.toString());
 		return Response
 				.status(Response.Status.CREATED)
 				.entity(service.create(request))

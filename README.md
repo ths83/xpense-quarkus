@@ -48,3 +48,29 @@ The following dependency must be added for serialization
 - Entities must be annotated by ```@RegisterForReflection``` to be included in the native executable.
 - Entities must contain at least a default constructor and a constructor with all parameters.
 - Entities constructors cannot be generated from Lombok annotations.
+
+### NEW ! Kubernetes Kafka setup
+
+Simple setup https://strimzi.io/quickstarts
+
+YAML :
+
+- [[kafka-consumer](src/main/kubernetes/kafka-consumer.yaml)]
+- [[kafka-producer](src/main/kubernetes/kafka-producer.yaml)]
+- [[xpenses-quarkus](src/main/kubernetes/xpenses-quarkus.yaml)]
+
+#### Docker build image
+
+```shell
+ # Enable storage to minikube for built images
+ eval $(minikube -p minikube docker-env)
+     
+ mvn package 
+ docker build -f src/main/docker/Dockerfile.jvm .
+ 
+ # Expose pod by creating a k8s service
+ kubectl expose pod -n kafka xpenses-quarkus --port=8080 --type=LoadBalancer
+ 
+ # Get minikube tunnel info to use the service
+ minikube service -n kafka xpenses-quarkus
+```

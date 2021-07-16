@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: kafka-producer
+  name: kafka-producer
+  namespace: kafka
+spec:
+  containers:
+    - args:
+        - bin/kafka-console-producer.sh
+        - --broker-list
+        - my-cluster-kafka-bootstrap:9092
+        - --topic
+        - my-topic
+      image: quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
+      name: kafka-producer
+      volumeMounts:
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: kube-api-access-l7kdg
+          readOnly: true
+  restartPolicy: Never
+  tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+  volumes:
+    - name: kube-api-access-l7kdg
+      projected:
+        defaultMode: 420
+        sources:
+          - serviceAccountToken:
+              expirationSeconds: 3607
+              path: token
+          - configMap:
+              items:
+                - key: ca.crt
+                  path: ca.crt
+              name: kube-root-ca.crt
+          - downwardAPI:
+              items:
+                - fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.namespace
+                  path: namespace
