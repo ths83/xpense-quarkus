@@ -55,9 +55,9 @@ Simple setup https://strimzi.io/quickstarts
 
 YAML :
 
-- [[kafka-consumer](src/main/kubernetes/kafka-consumer.yaml)]
-- [[kafka-producer](src/main/kubernetes/kafka-producer.yaml)]
-- [[xpenses-quarkus](src/main/kubernetes/xpenses-quarkus.yaml)]
+- [[kafka-consumer](service/src/main/kubernetes/kafka-consumer.yaml)]
+- [[kafka-producer](service/src/main/kubernetes/kafka-producer.yaml)]
+- [[xpenses-quarkus](service/src/main/kubernetes/xpenses-quarkus.yaml)]
 
 #### Docker build image
 

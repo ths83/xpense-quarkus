@@ -39,5 +39,5 @@ nb-configuration.xml
 .env
 
 .mvn
-src/main/resources/application.properties
-src/main/java/org/thoms/xpenses/configuration/UserConstants.java
+service/src/main/resources/application.properties
+service/src/main/java/org/thoms/xpenses/configuration/UserConstants.java
