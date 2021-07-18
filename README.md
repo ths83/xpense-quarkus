@@ -66,11 +66,40 @@ YAML :
  eval $(minikube -p minikube docker-env)
      
  mvn package 
- docker build -f src/main/docker/Dockerfile.jvm .
+ docker build -f service/src/main/docker/Dockerfile.jvm .
  
  # Expose pod by creating a k8s service
- kubectl expose pod -n kafka xpenses-quarkus --port=8080 --type=LoadBalancer
+ kubectl expose pod -n kafka xpenses-quarkus --port=8080 --type=NodePort
  
  # Get minikube tunnel info to use the service
  minikube service -n kafka xpenses-quarkus
+ 
+ # Use the localhost ip to connect to the application
 ```
+
+### NEW ! Kamel Kafka
+
+Create a Kamel application to listen from the given kafka topic and performs actions following the Enterprise
+Integration Patterns.
+
+#### Install the Kamel CLI to deploy the application in K8s
+
+__MacOs__
+
+```shell
+# Install the CLI
+brew install kamel
+
+# Add the CLI to the cluster and given namespace
+kamel install -n kafka
+
+# Deploy the application to the namespace
+kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka
+```
+
+__Useful links__
+
+- https://camel.apache.org/camel-k/latest/cli/modeline.html
+- https://camel.apache.org/camel-k/latest/running/running.html
+- https://camel.apache.org/camel-k/latest/installation/installation.html#procedure
+- https://camel.apache.org/components/3.11.x/kafka-component.html

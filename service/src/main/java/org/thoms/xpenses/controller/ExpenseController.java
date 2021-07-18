@@ -34,7 +34,7 @@ public class ExpenseController {
 
 	@POST
 	public Response create(final Expense request) {
-		emitter.send("Created expense " + request.toString());
+		emitter.send(String.format("CREATE/'%s'", request.getId()));
 		return Response
 				.status(Response.Status.CREATED)
 				.entity(service.create(request))
@@ -65,6 +65,7 @@ public class ExpenseController {
 	@PUT
 	@Path("/expenses/{expenseId}")
 	public Response update(@PathParam("expenseId") final String expenseId, final UpdateExpenseRequest request) {
+		emitter.send(String.format("UPDATE/'%s'", expenseId));
 		service.update(expenseId, request);
 		return Response.noContent().build();
 	}
@@ -72,6 +73,7 @@ public class ExpenseController {
 	@DELETE
 	@Path("/{activityId}/expenses/{expenseId}")
 	public Response delete(@PathParam("activityId") final String activityId, @PathParam("expenseId") final String expenseId) {
+		emitter.send(String.format("DELETE/'%s'", expenseId));
 		service.delete(activityId, expenseId);
 		return Response.noContent().build();
 	}
