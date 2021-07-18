@@ -62,11 +62,13 @@ YAML :
 #### Docker build image
 
 ```shell
+ cd service
+
  # Enable storage to minikube for built images
  eval $(minikube -p minikube docker-env)
      
  mvn package 
- docker build -f service/src/main/docker/Dockerfile.jvm .
+ docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
  
  # Expose pod by creating a k8s service
  kubectl expose pod -n kafka xpenses-quarkus --port=8080 --type=NodePort
@@ -84,6 +86,8 @@ Integration Patterns.
 
 #### Install the Kamel CLI to deploy the application in K8s
 
+- https://camel.apache.org/manual/latest/architecture.html
+
 __MacOs__
 
 ```shell
@@ -94,7 +98,7 @@ brew install kamel
 kamel install -n kafka
 
 # Deploy the application to the namespace
-kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka
+kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka --dev
 ```
 
 __Useful links__

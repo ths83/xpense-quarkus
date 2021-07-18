@@ -12,7 +12,13 @@ public class KafkaRoute extends RouteBuilder {
 
 	@Override
 	public void configure() throws Exception {
-		System.out.println("hello");
-		from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap:9092").log("${body}");
+
+		final var predicate = body().isEqualTo("CREATE/'null'");
+
+		from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap:9092")
+				.choice()
+					.when(predicate).log("${body}")
+					.otherwise().log("Operation not found")
+				.end();
 	}
 }
