@@ -70,8 +70,11 @@ YAML :
  mvn package 
  docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
  
- # Expose pod by creating a k8s service
- kubectl expose pod -n kafka xpenses-quarkus --port=8080 --type=NodePort
+ # Create deployment for the application
+ kubectl create deploy xpenses-quarkus-deploy -n kafka --image=xpenses-quarkus
+ 
+ # Expose deployment
+ kubectl expose deploy -n kafka xpenses-quarkus-deploy --port=8080 --type=NodePort
  
  # Get minikube tunnel info to use the service
  minikube service -n kafka xpenses-quarkus
@@ -99,6 +102,9 @@ kamel install -n kafka
 
 # Deploy the application to the namespace
 kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka --dev
+
+# Reset if any errors occurred
+kamel reset
 ```
 
 __Useful links__

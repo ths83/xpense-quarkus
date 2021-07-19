@@ -16,9 +16,12 @@ public class KafkaRoute extends RouteBuilder {
 		final var predicate = body().isEqualTo("CREATE/'null'");
 
 		from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap:9092")
-				.choice()
-					.when(predicate).log("${body}")
-					.otherwise().log("Operation not found")
-				.end();
+				.log("${body}");
+//				.choice()
+//					.when(predicate)
+//						.doTry()
+//						.to("rest:get:rwxcloud.com")
+//						.log("${body}")
+//					.end();
 	}
 }
