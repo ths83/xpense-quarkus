@@ -48,3 +48,41 @@ spec:
                     apiVersion: v1
                     fieldPath: metadata.namespace
                   path: namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: xpenses-quarkus-deploy
+  name: xpenses-quarkus-deploy
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xpenses-quarkus-deploy
+  template:
+    metadata:
+      labels:
+        app: xpenses-quarkus-deploy
+    spec:
+      containers:
+        - image: xpenses-quarkus
+          name: xpenses-quarkus
+          imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: xpenses-quarkus-deploy
+  name: xpenses-quarkus-deploy
+  namespace: kafka
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: xpenses-quarkus-deploy
+  type: NodePort

@@ -13,7 +13,7 @@ public class KafkaRoute extends RouteBuilder {
 	@Override
 	public void configure() throws Exception {
 
-		final var predicate = body().isEqualTo("CREATE/'null'");
+		final var predicate = body().startsWith("CREATE");
 
 		from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap:9092")
 				.log("${body}");

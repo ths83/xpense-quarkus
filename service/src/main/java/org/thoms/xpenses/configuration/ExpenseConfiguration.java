@@ -8,6 +8,8 @@ public class ExpenseConfiguration {
     public static final String EXPENSES_TABLE = "dev.expenses";
     public static final String ID = "id";
     public static final String EXPENSE_NAME = "expenseName";
+    public static final String EXPENSE_ACTIVITY_ID_START_DATE_INDEX = "activityId-startDate";
+
     public static final String USER = "user";
     public static final String AMOUNT = "amount";
     public static final String START_DATE = "startDate";

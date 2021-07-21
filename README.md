@@ -55,31 +55,61 @@ Simple setup https://strimzi.io/quickstarts
 
 YAML :
 
-- [[kafka-consumer](service/src/main/kubernetes/kafka-consumer.yaml)]
-- [[kafka-producer](service/src/main/kubernetes/kafka-producer.yaml)]
-- [[xpenses-quarkus](service/src/main/kubernetes/xpenses-quarkus.yaml)]
+- [[kafka-consumer](service/src/main/kubernetes/pod/kafka-consumer.yaml)]
+- [[kafka-producer](service/src/main/kubernetes/pod/kafka-producer.yaml)]
+- [[xpenses-quarkus-deploy](service/src/main/kubernetes/xpenses-quarkus-deploy.yaml)]
+- [[xpenses-quarkus-service](service/src/main/kubernetes/xpenses-quarkus-service.yaml)]
 
-#### Docker build image
+#### Start ecosystem
+
+_First start_
 
 ```shell
- cd service
+# Increase memory to support kafka cluster
+minikube start --memory=4096 
 
- # Enable storage to minikube for built images
- eval $(minikube -p minikube docker-env)
-     
- mvn package 
- docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
- 
- # Create deployment for the application
- kubectl create deploy xpenses-quarkus-deploy -n kafka --image=xpenses-quarkus
- 
- # Expose deployment
- kubectl expose deploy -n kafka xpenses-quarkus-deploy --port=8080 --type=NodePort
- 
- # Get minikube tunnel info to use the service
- minikube service -n kafka xpenses-quarkus
- 
- # Use the localhost ip to connect to the application
+# Enable storage to minikube for built images
+eval $(minikube -p minikube docker-env)
+
+cd service
+mvn package
+docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
+
+# Create namespace
+kubectl create ns kafka
+
+# Create ecosystem
+kubectl create -f xpenses-quarkus-all-in-one.yaml
+```
+
+_Other starts_
+```shell
+# Increase memory to support kafka cluster
+minikube start --memory=4096 
+
+# Enable storage to minikube for built images
+eval $(minikube -p minikube docker-env)
+
+cd service
+mvn package
+docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
+
+# Create namespace
+kubectl create ns kafka
+
+# Create kafka producer pod
+kubectl create -f src/main/kubernetes/pod/kafka-producer.yaml
+
+# Create deployment for the application
+kubectl create -f src/main/kubernetes/xpenses-quarkus-deploy.yaml
+
+# Expose deployment
+kubectl create -f src/main/kubernetes/xpenses-quarkus-service.yaml
+
+# Get minikube tunnel info to use the service
+minikube service -n kafka xpenses-quarkus-deploy
+
+# Use the localhost ip to connect to the application
 ```
 
 ### NEW ! Kamel Kafka
@@ -103,8 +133,12 @@ kamel install -n kafka
 # Deploy the application to the namespace
 kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka --dev
 
+### OPTIONAL
 # Reset if any errors occurred
-kamel reset
+kamel reset -n kafka
+
+# You may need to run this after reset
+kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka
 ```
 
 __Useful links__

@@ -34,16 +34,18 @@ public class ExpenseController {
 
 	@POST
 	public Response create(final Expense request) {
-		emitter.send(String.format("CREATE/'%s'", request.getId()));
+		final var expense = service.create(request);
+		emitter.send(String.format("CREATE - %s", expense.getId()));
 		return Response
 				.status(Response.Status.CREATED)
-				.entity(service.create(request))
+				.entity(expense)
 				.build();
 	}
 
 	@GET
 	@Path("{expenseId}")
 	public Response get(@PathParam("expenseId") final String expenseId) {
+		emitter.send(String.format("GET - %s", expenseId));
 		return Optional.ofNullable(
 				Response
 						.status(Response.Status.OK)
@@ -63,18 +65,18 @@ public class ExpenseController {
 	}
 
 	@PUT
-	@Path("/expenses/{expenseId}")
+	@Path("{expenseId}")
 	public Response update(@PathParam("expenseId") final String expenseId, final UpdateExpenseRequest request) {
-		emitter.send(String.format("UPDATE/'%s'", expenseId));
+		emitter.send(String.format("UPDATE - %s", expenseId));
 		service.update(expenseId, request);
 		return Response.noContent().build();
 	}
 
 	@DELETE
-	@Path("/{activityId}/expenses/{expenseId}")
-	public Response delete(@PathParam("activityId") final String activityId, @PathParam("expenseId") final String expenseId) {
-		emitter.send(String.format("DELETE/'%s'", expenseId));
-		service.delete(activityId, expenseId);
+	@Path("{expenseId}")
+	public Response delete(@PathParam("expenseId") final String expenseId) {
+		emitter.send(String.format("DELETE - %s", expenseId));
+		service.delete(expenseId);
 		return Response.noContent().build();
 	}
 }

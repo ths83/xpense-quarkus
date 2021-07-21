@@ -1,15 +1,15 @@
 package org.thoms.xpenses.services;
 
 import lombok.extern.jbosslog.JBossLog;
-import org.thoms.xpenses.configuration.ActivityConfiguration;
+import org.thoms.xpenses.configuration.ExpenseConfiguration;
 import org.thoms.xpenses.model.Expense;
 import org.thoms.xpenses.model.request.expenses.UpdateExpenseRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchGetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.awssdk.utils.StringUtils;
@@ -19,22 +19,22 @@ import javax.inject.Inject;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.thoms.xpenses.configuration.ActivityConfiguration.ACTIVITIES_TABLE;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.ACTIVITY_ID;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.AMOUNT;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.CAD;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.CURRENCY;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.EXPENSES_TABLE;
+import static org.thoms.xpenses.configuration.ExpenseConfiguration.EXPENSE_ACTIVITY_ID_START_DATE_INDEX;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.EXPENSE_NAME;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.ID;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.START_DATE;
 import static org.thoms.xpenses.configuration.ExpenseConfiguration.USER;
-import static org.thoms.xpenses.utils.DynamoDBUtils.buildAttributes;
 import static org.thoms.xpenses.utils.DynamoDBUtils.buildNumberAttribute;
 import static org.thoms.xpenses.utils.DynamoDBUtils.buildNumberAttributeUpdate;
 import static org.thoms.xpenses.utils.DynamoDBUtils.buildStringAttribute;
@@ -46,9 +46,6 @@ public class ExpenseService {
 
 	@Inject
 	DynamoDbClient dynamoDB;
-
-	@Inject
-	ActivityService activityService;
 
 	public Expense create(final Expense request) {
 		final var id = UUID.randomUUID().toString();
@@ -69,8 +66,6 @@ public class ExpenseService {
 						.tableName(EXPENSES_TABLE)
 						.item(expense)
 						.build());
-
-		activityService.addExpense(request.getActivityId(), id);
 
 		log.infof("Successfully added expense '%s' to activity '%s'", id, request.getActivityId());
 
@@ -98,24 +93,38 @@ public class ExpenseService {
 		return Expense.from(response);
 	}
 
-	public List<Expense> getByActivity(final String activityId) {
-		final var activity = activityService.get(activityId);
-
-		final var request = BatchGetItemRequest
+	public List<String> getByActivity(final String activityId) {
+		final var activityIdAttribute = buildStringAttribute(activityId);
+		final var request = QueryRequest
 				.builder()
-				.requestItems(Map.of(ACTIVITIES_TABLE, buildAttributes(activity.getExpenses())))
+				.tableName(EXPENSES_TABLE)
+				.indexName(EXPENSE_ACTIVITY_ID_START_DATE_INDEX)
+				.keyConditionExpression("activityId = :id")
+				.expressionAttributeValues(Map.of(":id", activityIdAttribute))
 				.build();
 
-		final var responses = dynamoDB.batchGetItem(request).responses();
+		final var responses = dynamoDB.query(request).items();
 
-		final var response = responses.get(EXPENSES_TABLE)
-				.stream()
-				.map(Expense::from)
-				.collect(Collectors.toList());
+		if (CollectionUtils.isNullOrEmpty(responses)) {
+			return List.of();
+		}
 
-		log.infof("Successfully found '%s' expense(s)", response.size());
+		final var expenses =
+				responses
+						.stream()
+						.map(Map::entrySet)
+						.flatMap(entries -> entries
+								.stream()
+								.filter(entry -> ID.equals(entry.getKey()))
+								.map(Map.Entry::getValue)
+								.map(AttributeValue::s))
+						.collect(Collectors.toList());
 
-		return response;
+		Collections.reverse(expenses);
+
+		log.infof("Successfully found '%s' expense(s)", expenses.size());
+
+		return expenses;
 	}
 
 	public void update(final String id, final UpdateExpenseRequest request) {
@@ -137,19 +146,17 @@ public class ExpenseService {
 		log.infof("Successfully updated expense '%s'", id);
 	}
 
-	public void delete(final String activityId, final String id) {
+	public void delete(final String id) {
 		get(id);
-
-		activityService.deleteExpense(activityId, id);
 
 		final var request = DeleteItemRequest
 				.builder()
 				.tableName(EXPENSES_TABLE)
-				.key(Map.of(ActivityConfiguration.ID, AttributeValue.builder().s(activityId).build()))
+				.key(Map.of(ExpenseConfiguration.ID, AttributeValue.builder().s(id).build()))
 				.build();
 
 		dynamoDB.deleteItem(request);
 
-		log.infof("Successfully deleted expense '%s' from activity '%s'", id, activityId);
+		log.infof("Successfully deleted expense '%s'", id);
 	}
 }

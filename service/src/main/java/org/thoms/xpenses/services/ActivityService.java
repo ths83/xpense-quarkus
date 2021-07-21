@@ -80,9 +80,19 @@ public class ActivityService {
 						.item(activity)
 						.build());
 
+		addUsersToActivity(id);
+
 		log.infof("Successfully created activity '%s'", id);
 
 		return Activity.from(activity);
+	}
+
+	private void addUsersToActivity(final String activityId) {
+		final var firstUser = userService.get(USER_1);
+		final var secondUser = userService.get(USER_2);
+		List.of(firstUser, secondUser).forEach(u ->
+				userService.addActivity(u.getUsername(), activityId)
+		);
 	}
 
 	public Activity get(final String activityId) {
@@ -126,34 +136,6 @@ public class ActivityService {
 		return response;
 	}
 
-	void addExpense(final String activityId, final String expenseId) {
-		final var request = UpdateItemRequest
-				.builder()
-				.tableName(ACTIVITIES_TABLE)
-				.key(Map.of(ID, AttributeValue.builder().s(activityId).build()))
-				.attributeUpdates(Map.of(EXPENSES,
-						AttributeValueUpdate
-								.builder()
-								.action(AttributeAction.PUT)
-								.value(AttributeValue.builder().s(expenseId).build())
-								.build()))
-				.build();
-
-		dynamoDB.updateItem(request);
-
-		addUsersToActivity(activityId);
-
-		log.infof("Successfully added expense '%s' to activity '%s'", expenseId, activityId);
-	}
-
-	private void addUsersToActivity(final String activityId) {
-		final var firstUser = userService.get(USER_1);
-		final var secondUser = userService.get(USER_2);
-		List.of(firstUser, secondUser).forEach(u ->
-				userService.addActivity(u.getUsername(), activityId)
-		);
-	}
-
 	public void update(final String activityId, final String name, final String date) {
 		validateActivityId(activityId);
 
@@ -179,9 +161,8 @@ public class ActivityService {
 	}
 
 	public void delete(final String activityId) {
-		get(activityId)
-				.getExpenses()
-				.forEach(exp -> expenseService.delete(activityId, exp));
+		expenseService.getByActivity(activityId)
+				.forEach(id -> expenseService.delete(id));
 
 		userService.deleteActivity(activityId);
 
@@ -218,25 +199,5 @@ public class ActivityService {
 		}
 
 		get(activityId);
-	}
-
-	void deleteExpense(final String activityId, final String expenseId) {
-		validateActivityId(activityId);
-
-		final var request = UpdateItemRequest
-				.builder()
-				.tableName(ACTIVITIES_TABLE)
-				.key(Map.of(ID, AttributeValue.builder().s(activityId).build()))
-				.attributeUpdates(Map.of(EXPENSES,
-						AttributeValueUpdate
-								.builder()
-								.action(AttributeAction.DELETE)
-								.value(AttributeValue.builder().s(expenseId).build())
-								.build()))
-				.build();
-
-		dynamoDB.updateItem(request);
-
-		log.infof("Successfully deleted expense '%s' from activity '%s'", expenseId, activityId);
 	}
 }
