@@ -29,7 +29,7 @@ public class ExpenseController {
 	ExpenseService service;
 
 	@Inject
-	@Channel("expenses-in")
+	@Channel("expenses-channel")
 	Emitter<String> emitter;
 
 	@POST
@@ -56,6 +56,7 @@ public class ExpenseController {
 
 	@GET
 	public Response getByActivity(@QueryParam("activityId") final String activityId) {
+		emitter.send(String.format("GET BY ACTIVITY - %s", activityId));
 		return Optional.ofNullable(
 				Response
 						.status(Response.Status.OK)

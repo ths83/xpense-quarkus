@@ -1,5 +1,8 @@
 package org.thoms.xpenses.controller;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.thoms.xpenses.model.Activity;
 import org.thoms.xpenses.model.request.activities.CreateActivityRequest;
 import org.thoms.xpenses.model.request.activities.UpdateActivityRequest;
 import org.thoms.xpenses.services.ActivityService;
@@ -27,17 +30,24 @@ public class ActivityController {
 	@Inject
 	ActivityService service;
 
+	@Inject
+	@Channel("activities-channel")
+	Emitter<String> emitter;
+
 	@POST
 	public Response create(final CreateActivityRequest request) {
+		final var activity = service.create(request.getName(), request.getCreatedBy());
+		emitter.send(String.format("CREATE - %s", activity.getId()));
 		return Response
 				.status(Response.Status.CREATED)
-				.entity(service.create(request.getName(), request.getCreatedBy()))
+				.entity(activity)
 				.build();
 	}
 
 	@GET
 	@Path("{activityId}")
 	public Response get(@PathParam("activityId") final String activityId) {
+		emitter.send(String.format("GET - %s", activityId));
 		return Optional.ofNullable(
 				Response
 						.status(Response.Status.OK)
@@ -48,6 +58,7 @@ public class ActivityController {
 
 	@GET
 	public Response getByUsername(@QueryParam("username") final String username) {
+		emitter.send(String.format("USERNAME - %s", username));
 		return Optional.ofNullable(
 				Response
 						.status(Response.Status.OK)
@@ -59,6 +70,7 @@ public class ActivityController {
 	@PUT
 	@Path("{activityId}")
 	public Response update(@PathParam("activityId") final String activityId, final UpdateActivityRequest request) {
+		emitter.send(String.format("UPDATE - %s", activityId));
 		service.update(activityId, request.getName(), request.getDate());
 		return Response.noContent().build();
 	}
@@ -66,6 +78,7 @@ public class ActivityController {
 	@DELETE
 	@Path("{activityId}")
 	public Response delete(@PathParam("activityId") final String activityId) {
+		emitter.send(String.format("DELETE - %s", activityId));
 		service.delete(activityId);
 		return Response.noContent().build();
 	}
@@ -73,6 +86,7 @@ public class ActivityController {
 	@PATCH
 	@Path("{activityId}")
 	public Response close(@PathParam("activityId") final String activityId) {
+		emitter.send(String.format("CLOSE - %s", activityId));
 		service.close(activityId);
 		return Response.noContent().build();
 	}

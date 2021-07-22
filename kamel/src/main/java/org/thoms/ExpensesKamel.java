@@ -8,7 +8,7 @@ import javax.enterprise.context.ApplicationScoped;
 // camel-k: dependency=mvn:org.apache.camel.quarkus:camel-quarkus-core
 
 @ApplicationScoped
-public class KafkaRoute extends RouteBuilder {
+public class ExpensesKamel extends RouteBuilder {
 
 	@Override
 	public void configure() throws Exception {

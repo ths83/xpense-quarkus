@@ -38,7 +38,6 @@ https://quarkus.io/guides/writing-native-applications-tips
 The following dependency must be added for serialization
 
 ```xml
-
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-jsonb</artifactId>
@@ -49,20 +48,16 @@ The following dependency must be added for serialization
 - Entities must contain at least a default constructor and a constructor with all parameters.
 - Entities constructors cannot be generated from Lombok annotations.
 
-### NEW ! Kubernetes Kafka setup
+### Kubernetes Kafka setup
 
-Simple setup https://strimzi.io/quickstarts
+_Please follow instructions from https://strimzi.io/quickstarts to set up the Kafka cluster._
 
 YAML :
 
-- [[kafka-consumer](service/src/main/kubernetes/pod/kafka-consumer.yaml)]
-- [[kafka-producer](service/src/main/kubernetes/pod/kafka-producer.yaml)]
-- [[xpenses-quarkus-deploy](service/src/main/kubernetes/xpenses-quarkus-deploy.yaml)]
-- [[xpenses-quarkus-service](service/src/main/kubernetes/xpenses-quarkus-service.yaml)]
+- [[kafka-producer-all-in-one](service/src/main/kubernetes/kafka-producer-all-in-one.yaml)]
+- [[xpenses-quarkus-all-in-one](service/src/main/kubernetes/xpenses-quarkus-all-in-one.yaml)]
 
-#### Start ecosystem
-
-_First start_
+#### Run everything
 
 ```shell
 # Increase memory to support kafka cluster
@@ -77,42 +72,20 @@ docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
 
 # Create namespace
 kubectl create ns kafka
+
+# Create kafka producers
+kubectl create -f kafka-producer-all-in-one.yaml
 
 # Create ecosystem
 kubectl create -f xpenses-quarkus-all-in-one.yaml
-```
-
-_Other starts_
-```shell
-# Increase memory to support kafka cluster
-minikube start --memory=4096 
-
-# Enable storage to minikube for built images
-eval $(minikube -p minikube docker-env)
-
-cd service
-mvn package
-docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
-
-# Create namespace
-kubectl create ns kafka
-
-# Create kafka producer pod
-kubectl create -f src/main/kubernetes/pod/kafka-producer.yaml
-
-# Create deployment for the application
-kubectl create -f src/main/kubernetes/xpenses-quarkus-deploy.yaml
-
-# Expose deployment
-kubectl create -f src/main/kubernetes/xpenses-quarkus-service.yaml
 
 # Get minikube tunnel info to use the service
-minikube service -n kafka xpenses-quarkus-deploy
+minikube service -n kafka xpenses-quarkus-service
 
 # Use the localhost ip to connect to the application
 ```
 
-### NEW ! Kamel Kafka
+### Kamel Kafka
 
 Create a Kamel application to listen from the given kafka topic and performs actions following the Enterprise
 Integration Patterns.
@@ -131,14 +104,14 @@ brew install kamel
 kamel install -n kafka
 
 # Deploy the application to the namespace
-kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka --dev
+kamel run kamel/src/main/java/org/thoms/ExpensesKamel.java -n kafka --dev
 
 ### OPTIONAL
 # Reset if any errors occurred
 kamel reset -n kafka
 
 # You may need to run this after reset
-kamel run kamel/src/main/java/org/thoms/KafkaRoute.java -n kafka
+kamel run kamel/src/main/java/org/thoms/ExpensesKamel.java -n kafka
 ```
 
 __Useful links__
