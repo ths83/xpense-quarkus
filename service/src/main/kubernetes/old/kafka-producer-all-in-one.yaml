@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: kafka-producer-expenses
+    type: kafka-producer
+  name: kafka-producer-expenses
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-producer-expenses
+  template:
+    metadata:
+      labels:
+        app: kafka-producer-expenses
+    spec:
+      containers:
+        - args:
+            - bin/kafka-console-producer.sh
+            - --broker-list
+            - my-cluster-kafka-bootstrap:9092
+            - --topic
+            - expenses-topic
+          image: quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
+          name: kafka-producer-expenses
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: kafka-producer-activities
+    type: kafka-producer
+  name: kafka-producer-activities
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-producer-activities
+  template:
+    metadata:
+      labels:
+        app: kafka-producer-activities
+    spec:
+      containers:
+        - args:
+            - bin/kafka-console-producer.sh
+            - --broker-list
+            - my-cluster-kafka-bootstrap:9092
+            - --topic
+            - activities-topic
+          image: quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
+          name: kafka-producer-activities

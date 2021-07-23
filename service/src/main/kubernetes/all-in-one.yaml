@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: kafka-producer-expenses
+    type: kafka-producer
+  name: kafka-producer-expenses
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-producer-expenses
+  template:
+    metadata:
+      labels:
+        app: kafka-producer-expenses
+    spec:
+      containers:
+        - args:
+            - bin/kafka-console-producer.sh
+            - --broker-list
+            - my-cluster-kafka-bootstrap:9092
+            - --topic
+            - expenses-topic
+          image: quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
+          name: kafka-producer-expenses
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: kafka-producer-activities
+    type: kafka-producer
+  name: kafka-producer-activities
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-producer-activities
+  template:
+    metadata:
+      labels:
+        app: kafka-producer-activities
+    spec:
+      containers:
+        - args:
+            - bin/kafka-console-producer.sh
+            - --broker-list
+            - my-cluster-kafka-bootstrap:9092
+            - --topic
+            - activities-topic
+          image: quay.io/strimzi/kafka:0.24.0-kafka-2.8.0
+          name: kafka-producer-activities
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: xpenses-quarkus-deploy
+  name: xpenses-quarkus-deploy
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xpenses-quarkus-deploy
+  template:
+    metadata:
+      labels:
+        app: xpenses-quarkus-deploy
+    spec:
+      containers:
+        - image: xpenses-quarkus
+          name: xpenses-quarkus
+          imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: xpenses-quarkus-service
+  name: xpenses-quarkus-service
+  namespace: kafka
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: xpenses-quarkus-deploy
+  type: NodePort

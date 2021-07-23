@@ -50,18 +50,20 @@ The following dependency must be added for serialization
 
 ### Kubernetes Kafka setup
 
-_Please follow instructions from https://strimzi.io/quickstarts to set up the Kafka cluster._
+_https://strimzi.io/quickstarts_
 
 YAML :
 
-- [[kafka-producer-all-in-one](service/src/main/kubernetes/kafka-producer-all-in-one.yaml)]
-- [[xpenses-quarkus-all-in-one](service/src/main/kubernetes/xpenses-quarkus-all-in-one.yaml)]
+- [[all-in-one](service/src/main/kubernetes/all-in-one.yaml)]
 
 #### Run everything
 
 ```shell
 # Increase memory to support kafka cluster
 minikube start --memory=4096 
+
+# Create namespace
+kubectl create ns kafka
 
 # Enable storage to minikube for built images
 eval $(minikube -p minikube docker-env)
@@ -70,14 +72,13 @@ cd service
 mvn package
 docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
 
-# Create namespace
-kubectl create ns kafka
+# Set up Kafka cluster https://strimzi.io/quickstarts
+kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka
+kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 
-# Create kafka producers
-kubectl create -f kafka-producer-all-in-one.yaml
-
-# Create ecosystem
-kubectl create -f xpenses-quarkus-all-in-one.yaml
+# Set up environment
+kubectl create -f src/main/kubernetes/all-in-one.yaml
 
 # Get minikube tunnel info to use the service
 minikube service -n kafka xpenses-quarkus-service
