@@ -19,6 +19,21 @@ spec:
         - image: xpenses-quarkus
           name: xpenses-quarkus
           imagePullPolicy: Never
+          ports:
+            - name: app-port
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: app-port
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - echo 'I'm alive !'
+            initialDelaySeconds: 10
+            periodSeconds: 3600
 ---
 apiVersion: v1
 kind: Service
