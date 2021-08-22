@@ -4,6 +4,8 @@ import org.thoms.xpenses.model.request.activities.CreateActivityRequest;
 import org.thoms.xpenses.model.request.activities.UpdateActivityRequest;
 import org.thoms.xpenses.services.ActivityService;
 
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -27,6 +29,7 @@ public class ActivityController {
 	@Inject
 	ActivityService service;
 
+	@RolesAllowed(value = {"admin"})
 	@POST
 	public Response create(final CreateActivityRequest request) {
 		final var activity = service.create(request.getName(), request.getCreatedBy());
@@ -36,6 +39,7 @@ public class ActivityController {
 				.build();
 	}
 
+	@PermitAll
 	@GET
 	@Path("{activityId}")
 	public Response get(@PathParam("activityId") final String activityId) {
@@ -47,6 +51,7 @@ public class ActivityController {
 				.build();
 	}
 
+	@RolesAllowed(value = {"users"})
 	@GET
 	public Response getByUsername(@QueryParam("username") final String username) {
 		return Optional.ofNullable(
@@ -57,6 +62,7 @@ public class ActivityController {
 				.build();
 	}
 
+	@RolesAllowed(value = {"users"})
 	@PUT
 	@Path("{activityId}")
 	public Response update(@PathParam("activityId") final String activityId, final UpdateActivityRequest request) {
@@ -64,6 +70,7 @@ public class ActivityController {
 		return Response.noContent().build();
 	}
 
+	@RolesAllowed(value = {"admin"})
 	@DELETE
 	@Path("{activityId}")
 	public Response delete(@PathParam("activityId") final String activityId) {
@@ -71,6 +78,7 @@ public class ActivityController {
 		return Response.noContent().build();
 	}
 
+	@RolesAllowed(value = {"users"})
 	@PATCH
 	@Path("{activityId}")
 	public Response close(@PathParam("activityId") final String activityId) {

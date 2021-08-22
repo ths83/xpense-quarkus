@@ -49,3 +49,14 @@ The following dependency must be added for serialization
 - Entities must be annotated by ```@RegisterForReflection``` to be included in the native executable.
 - Entities must contain at least a default constructor and a constructor with all parameters.
 - Entities constructors cannot be generated from Lombok annotations.
+
+## Keycloak
+
+Reference: https://piotrminkowski.com/2020/09/16/quarkus-oauth2-and-security-with-keycloak
+
+Run keycloak: 
+```shell
+docker run -p 8888:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin quay.io/keycloak/keycloak:15.0.2
+```
+
+### Video [here](docs/keycloak/demo.mp4)

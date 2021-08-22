@@ -69,7 +69,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>url-connection-client</artifactId>
         </dependency>
-
+        <!--KEYCLOAK-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-oauth2</artifactId>
+        </dependency>
         <!-- External dependencies -->
         <dependency>
             <groupId>org.projectlombok</groupId>
