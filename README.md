@@ -1,5 +1,7 @@
 # XPENSES
 
+_Branch for testing purpose: please use Docker or Podman as Containers env._
+
 ## Why ?
 
 This application allows several users to track and share their expenses.
@@ -47,77 +49,3 @@ The following dependency must be added for serialization
 - Entities must be annotated by ```@RegisterForReflection``` to be included in the native executable.
 - Entities must contain at least a default constructor and a constructor with all parameters.
 - Entities constructors cannot be generated from Lombok annotations.
-
-### Kubernetes Kafka setup
-
-_https://strimzi.io/quickstarts_
-
-YAML :
-
-- [[all-in-one](service/src/main/kubernetes/all-in-one.yaml)]
-
-#### Run everything
-
-```shell
-# Increase memory to support kafka cluster
-minikube start --memory=4096 
-
-# Create namespace
-kubectl create ns kafka
-
-# Enable storage to minikube for built images
-eval $(minikube -p minikube docker-env)
-
-cd service
-mvn package
-docker build -f src/main/docker/Dockerfile.jvm . -t xpenses-quarkus
-
-# Set up Kafka cluster https://strimzi.io/quickstarts
-kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
-kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka
-kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-
-# Set up environment
-kubectl create -f src/main/kubernetes/all-in-one.yaml
-
-# Get minikube tunnel info to use the service
-minikube service -n kafka xpenses-quarkus-service
-
-# Use the localhost ip to connect to the application
-```
-
-### Kamel Kafka
-
-Create a Kamel application to listen from the given kafka topic and performs actions following the Enterprise
-Integration Patterns.
-
-#### Install the Kamel CLI to deploy the application in K8s
-
-- https://camel.apache.org/manual/latest/architecture.html
-
-__MacOs__
-
-```shell
-# Install the CLI
-brew install kamel
-
-# Add the CLI to the cluster and given namespace
-kamel install -n kafka
-
-# Deploy the application to the namespace
-kamel run kamel/src/main/java/org/thoms/ExpensesKamel.java -n kafka --dev
-
-### OPTIONAL
-# Reset if any errors occurred
-kamel reset -n kafka
-
-# You may need to run this after reset
-kamel run kamel/src/main/java/org/thoms/ExpensesKamel.java -n kafka
-```
-
-__Useful links__
-
-- https://camel.apache.org/camel-k/latest/cli/modeline.html
-- https://camel.apache.org/camel-k/latest/running/running.html
-- https://camel.apache.org/camel-k/latest/installation/installation.html#procedure
-- https://camel.apache.org/components/3.11.x/kafka-component.html

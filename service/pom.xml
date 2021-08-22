@@ -60,11 +60,6 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--KAFKA-->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-        </dependency>
         <!--AWS-->
         <dependency>
             <groupId>io.quarkus</groupId>
